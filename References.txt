@@ -1,0 +1,6 @@
+First and last element of a SQL query
+https://stackoverflow.com/questions/26528300/get-first-and-last-element-with-sqlalchemy
+
+Convert date from a text to a string
+https://stackoverflow.com/questions/58986739/pandas-typeerror-an-integer-is-required-got-type-str
+
