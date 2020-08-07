@@ -61,7 +61,7 @@ def homepage():
         f"Query the dates and temperature observations of the most active station for the last year of data. <br/>"
         f"<br/>"
 
-        f"/api/v1.0/yyyy-mm-dd/yyyy-mm-dd/<br/>"
+        f"/api/v1.0/start_end<br/>"
         f"- Returns an Aveage Max, and Min temperature for given period.<br/>"
         f"<br/>"
 
@@ -72,12 +72,15 @@ def homepage():
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
+    
+    f"Convert the query dates & temperature for the last year. <br/>"
+    
     ytd = timedelta(days=365)
     year_ago = dt.date(2017, 8, 23) - ytd
-    year_rain = session.query(Measurement.date,Measurement.prcp).\
+    year_rain = session.query(Measurement.date, Measurement.prcp).\
         filter(Measurement.date >= year_ago).order_by(Measurement.date.desc()).all()
     
-    #create the JSON objects
+    # Create the JSON objects
     rainfall_list = [year_rain]
     return jsonify(rainfall_list)
 
@@ -85,29 +88,43 @@ def precipitation():
 
 @app.route("/api/v1.0/stations")
 def stations():
-    act_station = session.query(Measurement.station, func.count(Measurement.station)).\
-        group_by(Measurement.station).\
-        order_by(func.count(Measurement.station).desc()).all()
-
-    #create the JSON objects
-    stations_list = [act_station]
+    active_station = session.query(Station.name).distinct().all()
+    
+    # Create the JSON objects
+    stations_list = [active_station]
     return jsonify(stations_list)
 
 # Create a JSON list of the temperatures from the station that has the most readings for the last year
 
 @app.route("/api/v1.0/tobs")
 def tobs():
-    last_year_obs = []
-    station_highest = session.query(funct.count())
-    observations = session.query(Measurement.tobs).filter(Measurement.date >= "2016-08-23").all()
-    
-    
-    last_year_obs = list(np.ravel(observations))
-    return jsonify(last_year_obs)
+    ytd2 = timedelta(days=365)
+    year_ago_obs = dt.date(2017, 8, 23) - ytd2
+    act_station = session.query(Measurement.station, Measurement.tobs, Measurement.date).\
+        filter(func.count(Measurement.station).desc()).first().\
+        filter(Measurement.date >= year_ago_obs).all()
+               
+        
+    temp_observations = [act_station]
+    return jsonify(temp_observations)
+
 
 # Return a JSON list of the minimum temperature, the average temperature, and the max temperature for a given start or start-end range.
+# When given the start and the end date, calculate the TMIN, TAVG, and TMAX for dates between the start and end date inclusive.
 
-@app.route("/api/v1.0/yyyy-mm-dd/yyyy-mm-dd")
+@app.route("/api/v1.0/start_end")
+def calc_temps(start_date, end_date):
+    temps_stats = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
+        filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
+
+    stats_temp = [temps_stats]
+    return jsonify(stats_temp('2016-08-25', '2016-11-05'))
+
+    # stats_period = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+    #     filter(Measurement.date.between())
+
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
